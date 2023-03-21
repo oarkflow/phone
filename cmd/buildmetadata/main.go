@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/oarkflow/phone"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -20,7 +19,8 @@ import (
 	"strings"
 
 	"bytes"
-	"google.golang.org/protobuf/proto"
+
+	"github.com/golang/protobuf/proto"
 )
 
 type prefixBuild struct {
@@ -33,6 +33,9 @@ type prefixBuild struct {
 const (
 	metadataURL  = "https://raw.githubusercontent.com/googlei18n/libphonenumber/master/resources/PhoneNumberMetadata.xml"
 	metadataPath = "metadata_bin.go"
+
+	shortNumberMetadataURL  = "https://raw.githubusercontent.com/googlei18n/libphonenumber/master/resources/ShortNumberMetadata.xml"
+	shortNumberMetadataPath = "shortnumber_metadata_bin.go"
 
 	tzURL  = "https://raw.githubusercontent.com/googlei18n/libphonenumber/master/resources/timezones/map_data.txt"
 	tzPath = "prefix_to_timezone_bin.go"
@@ -118,7 +121,7 @@ func writeFile(filePath string, data []byte) {
 	}
 
 	fmt.Printf("Writing new %s\n", filePath)
-	err := ioutil.WriteFile(filePath, data, os.FileMode(0664))
+	err := os.WriteFile(filePath, data, os.FileMode(0664))
 	if err != nil {
 		log.Fatalf("Error writing '%s': %s", filePath, err)
 	}
@@ -247,7 +250,7 @@ func buildMetadata() *phone.PhoneMetadataCollection {
 	body := fetchURL(metadataURL)
 
 	log.Println("Building new metadata collection")
-	collection, err := phone.BuildPhoneMetadataCollection(body, false, false)
+	collection, err := phone.BuildPhoneMetadataCollection(body, false, false, false)
 	if err != nil {
 		log.Fatalf("Error converting XML: %s", err)
 	}
@@ -260,6 +263,27 @@ func buildMetadata() *phone.PhoneMetadataCollection {
 
 	log.Println("Writing new metadata_bin.go")
 	writeFile(metadataPath, generateBinFile("metadataData", data))
+	return collection
+}
+
+func buildShortNumberMetadata() *phone.PhoneMetadataCollection {
+	log.Println("Fetching ShortNumberMetadata.xml from Github")
+	body := fetchURL(shortNumberMetadataURL)
+
+	log.Println("Building new short number metadata collection")
+	collection, err := phone.BuildPhoneMetadataCollection(body, false, false, true)
+	if err != nil {
+		log.Fatalf("Error converting XML: %s", err)
+	}
+
+	// write it out as a protobuf
+	data, err := proto.Marshal(collection)
+	if err != nil {
+		log.Fatalf("Error marshalling metadata: %v", err)
+	}
+
+	log.Println("Writing new metadata_bin.go")
+	writeFile(shortNumberMetadataPath, generateBinFile("shortNumberMetadataData", data))
 	return collection
 }
 
@@ -409,7 +433,7 @@ func readMappingsForDir(dir string) map[int]string {
 		log.Fatal(err)
 	}
 	for _, file := range files {
-		body, err := ioutil.ReadFile(file)
+		body, err := os.ReadFile(file)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -454,6 +478,7 @@ func readMappingsForDir(dir string) map[int]string {
 
 func main() {
 	metadata := buildMetadata()
+	buildShortNumberMetadata()
 	buildRegions(metadata)
 	buildTimezones()
 	buildPrefixData(&carrier)

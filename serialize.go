@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	fmt "fmt"
-	"io"
+	"io/ioutil"
 	"strings"
 )
 
@@ -171,7 +171,7 @@ func decodeUnzipString(data string) ([]byte, error) {
 		return nil, err
 	}
 
-	rawBytes, err := io.ReadAll(zipReader)
+	rawBytes, err := ioutil.ReadAll(zipReader)
 	if err != nil {
 		return nil, err
 	}

@@ -19,8 +19,6 @@
 
 syntax = "proto2";
 
-option go_package = "./";
-
 option java_package = "com.google.i18n.phonenumbers";
 option optimize_for = LITE_RUNTIME;
 
@@ -73,7 +71,7 @@ message PhoneNumber {
   // Clients who use the parsing functionality of the i18n phone
   // number libraries will have these fields set if necessary automatically.
   optional bool italian_leading_zero = 4;
-  optional int32 number_of_leading_zeros = 8 [default = 1];
+  optional int32 number_of_leading_zeros = 8 [ default = 1 ];
 
   // The next few fields are non-essential fields for a phone number. They
   // retain extra information about the form the phone number was in when it was

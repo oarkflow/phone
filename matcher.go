@@ -1,10 +1,19 @@
 package phone
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
 )
+
+type PhoneNumberMatcher struct {
+}
+
+func NewPhoneNumberMatcher(seq string) *PhoneNumberMatcher {
+	// TODO(ttacon): to be implemented
+	return nil
+}
 
 func ContainsOnlyValidXChars(number *PhoneNumber, candidate string) bool {
 	// The characters 'x' and 'X' can be (1) a carrier code, in which
@@ -199,4 +208,26 @@ func AllNumberGroupsAreExactlyPresent(
 	return (candidateNumberGroupIndex >= 0 &&
 		strings.HasSuffix(candidateGroups[candidateNumberGroupIndex],
 			formattedNumberGroups[0]))
+}
+
+// Returns whether the given national number (a string containing only decimal digits) matches
+// the national number pattern defined in the given PhoneNumberDesc message.
+func MatchNationalNumber(number string, numberDesc PhoneNumberDesc, allowPrefixMatch bool) bool {
+	nationalNumberPattern := numberDesc.GetNationalNumberPattern()
+	// We don't want to consider it a prefix match when matching non-empty input against an empty pattern.
+	if len(nationalNumberPattern) == 0 {
+		return false
+	}
+	regex := regexFor(nationalNumberPattern)
+	return match(number, regex, allowPrefixMatch)
+}
+
+func match(number string, pattern *regexp.Regexp, allowPrefixMatch bool) bool {
+	ind := pattern.FindStringIndex(number)
+	if len(ind) == 0 || ind[0] != 0 {
+		return false
+	}
+	patP := `^(?:` + pattern.String() + `)$` // Strictly match
+	pat := regexFor(patP)
+	return pat.MatchString(number) || allowPrefixMatch
 }

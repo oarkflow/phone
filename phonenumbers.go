@@ -1,19 +1,18 @@
 package phone
 
 import (
+	"errors"
 	fmt "fmt"
-	"github.com/oarkflow/errors"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"unicode"
 
-	"github.com/goccy/go-reflect"
-
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -542,7 +541,7 @@ func (l Leniency) Verify(number *PhoneNumber, candidate string) bool {
 
 var (
 	// golang map is not go routine safe. Sometimes process exiting
-	// because of panic. So adding mutex to synchronize the workflow.
+	// because of panic. So adding mutex to synchronize the operation.
 
 	// The set of regions that share country calling code 1.
 	// There are roughly 26 regions.
@@ -2556,7 +2555,7 @@ func maybeExtractCountryCode(
 		}
 		potentialCountryCode := extractCountryCode(fullNumber, nationalNumber)
 		if potentialCountryCode != 0 {
-			phoneNumber.CountryCode = proto.Int32(int32(potentialCountryCode))
+			phoneNumber.CountryCode = proto.Int(potentialCountryCode)
 			return potentialCountryCode, nil
 		}
 
@@ -2598,13 +2597,13 @@ func maybeExtractCountryCode(
 					val := PhoneNumber_FROM_NUMBER_WITHOUT_PLUS_SIGN
 					phoneNumber.CountryCodeSource = &val
 				}
-				phoneNumber.CountryCode = proto.Int32(int32(defaultCountryCode))
+				phoneNumber.CountryCode = proto.Int(defaultCountryCode)
 				return defaultCountryCode, nil
 			}
 		}
 	}
 	// No country calling code present.
-	phoneNumber.CountryCode = proto.Int32(0)
+	phoneNumber.CountryCode = proto.Int(0)
 	return 0, nil
 }
 
@@ -2873,7 +2872,7 @@ func setItalianLeadingZerosForPhoneNumber(
 		numLeadZeros++
 	}
 	if numLeadZeros != 1 {
-		phoneNumber.NumberOfLeadingZeros = proto.Int32(int32(numLeadZeros))
+		phoneNumber.NumberOfLeadingZeros = proto.Int(numLeadZeros)
 	}
 }
 
@@ -2964,7 +2963,7 @@ func parseHelper(
 		normalizedNationalNumber.WriteString(normalize(nationalNumber.String()))
 		if len(defaultRegion) != 0 {
 			countryCode = int(regionMetadata.GetCountryCode())
-			phoneNumber.CountryCode = proto.Int32(int32(countryCode))
+			phoneNumber.CountryCode = proto.Int(countryCode)
 		} else if keepRawInput {
 			phoneNumber.CountryCodeSource = nil
 		}
@@ -3136,7 +3135,7 @@ func IsNumberMatchWithNumbers(firstNumberIn, secondNumberIn *PhoneNumber) MatchT
 	// Checks cases where one or both country_code fields were not
 	// specified. To make equality checks easier, we first set the
 	// country_code fields to be equal.
-	firstNumber.CountryCode = proto.Int32(secondNumberCountryCode)
+	firstNumber.CountryCode = proto.Int(int(secondNumberCountryCode))
 	// If all else was the same, then this is an NSN_MATCH.
 	// TODO(ttacon): remove when make gen-equals
 	if reflect.DeepEqual(firstNumber, secondNumber) {
@@ -3334,7 +3333,12 @@ func GetTimezonesForPrefix(number string) ([]string, error) {
 	// strip any leading +
 	number = strings.TrimLeft(number, "+")
 
-	for i := timezoneMap.MaxLength; i > 0; i-- {
+	matchLength := len(number) // maxLength: min( len(number), timezoneMap.MaxLength )
+	if matchLength > timezoneMap.MaxLength {
+		matchLength = timezoneMap.MaxLength
+	}
+
+	for i := matchLength; i > 0; i-- {
 		index, err := strconv.Atoi(number[0:i])
 		if err != nil {
 			return nil, err

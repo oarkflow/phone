@@ -23,7 +23,7 @@ type Builder struct {
 	off       int               // read at &buf[off], write at &buf[len(buf)]
 	runeBytes [utf8.UTFMax]byte // avoid allocation of slice on each WriteByte or Rune
 	bootstrap [64]byte          // memory to hold first slice; helps small buffers (Printf) avoid allocation.
-	lastRead  readOp            // last read workflow, so that Unread* can work correctly.
+	lastRead  readOp            // last read operation, so that Unread* can work correctly.
 }
 
 // The readOp constants describe the last action performed on
@@ -32,9 +32,9 @@ type Builder struct {
 type readOp int
 
 const (
-	opInvalid  readOp = iota // Non-read workflow.
+	opInvalid  readOp = iota // Non-read operation.
 	opReadRune               // Read rune.
-	opRead                   // Any other read workflow.
+	opRead                   // Any other read operation.
 )
 
 // Bytes returns a slice of the contents of the unread portion of the buffer;
@@ -321,13 +321,13 @@ func (b *Builder) ReadRune() (r rune, size int, err error) {
 }
 
 // UnreadRune unreads the last rune returned by ReadRune.
-// If the most recent read or write workflow on the buffer was
+// If the most recent read or write operation on the buffer was
 // not a ReadRune, UnreadRune returns an error.  (In this regard
 // it is stricter than UnreadByte, which will unread the last byte
-// from any read workflow.)
+// from any read operation.)
 func (b *Builder) UnreadRune() error {
 	if b.lastRead != opReadRune {
-		return errors.New("bytes.Buffer: UnreadRune: previous workflow was not ReadRune")
+		return errors.New("bytes.Buffer: UnreadRune: previous operation was not ReadRune")
 	}
 	b.lastRead = opInvalid
 	if b.off > 0 {
@@ -338,11 +338,11 @@ func (b *Builder) UnreadRune() error {
 }
 
 // UnreadByte unreads the last byte returned by the most recent
-// read workflow.  If write has happened since the last read, UnreadByte
+// read operation.  If write has happened since the last read, UnreadByte
 // returns an error.
 func (b *Builder) UnreadByte() error {
 	if b.lastRead != opReadRune && b.lastRead != opRead {
-		return errors.New("bytes.Buffer: UnreadByte: previous workflow was not a read")
+		return errors.New("bytes.Buffer: UnreadByte: previous operation was not a read")
 	}
 	b.lastRead = opInvalid
 	if b.off > 0 {
