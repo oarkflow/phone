@@ -1,0 +1,34 @@
+{
+  "name": "mcc-mnc-list",
+  "version": "1.1.11",
+  "description": "List of MCC and MNC codes from up-to-date Wikipedia page",
+  "main": "index.js",
+  "types": "types.d.ts",
+  "scripts": {
+    "test": "eslint . && ava",
+    "fetch": "node fetch.js"
+  },
+  "author": "Peter Bakondy",
+  "license": "MIT",
+  "devDependencies": {
+    "ava": "^4.3.3",
+    "eslint": "^8.23.1",
+    "jsdom": "^20.0.0"
+  },
+  "keywords": [
+    "mcc",
+    "mnc",
+    "mccmnc",
+    "mobile",
+    "network",
+    "list"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pbakondy/mcc-mnc-list.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pbakondy/mcc-mnc-list/issues"
+  },
+  "homepage": "https://github.com/pbakondy/mcc-mnc-list#readme"
+}

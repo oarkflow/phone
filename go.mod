@@ -1,15 +1,15 @@
 module github.com/oarkflow/phone
-go 1.19
+
+go 1.21.0
 
 require (
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/oarkflow/errors v0.0.6
-	github.com/oarkflow/pkg v0.0.22
-	golang.org/x/text v0.8.0
+	github.com/oarkflow/pkg v0.0.93
+	golang.org/x/text v0.14.0
 )
 
 require (
-	github.com/klauspost/compress v1.15.15 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 )
-
