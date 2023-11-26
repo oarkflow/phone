@@ -2104,6 +2104,30 @@
     "countryName": "Estonia",
     "countryCode": "EE",
     "mcc": "248",
+    "mnc": "31",
+    "brand": null,
+    "operator": "YATECO OÜ",
+    "status": "Unknown",
+    "bands": "Unknown",
+    "notes": null
+  },
+  {
+    "type": "National",
+    "countryName": "Estonia",
+    "countryCode": "EE",
+    "mcc": "248",
+    "mnc": "32",
+    "brand": null,
+    "operator": "Narayana OÜ",
+    "status": "Unknown",
+    "bands": "Unknown",
+    "notes": null
+  },
+  {
+    "type": "National",
+    "countryName": "Estonia",
+    "countryCode": "EE",
+    "mcc": "248",
     "mnc": "71",
     "brand": null,
     "operator": "Siseministeerium (Ministry of Interior)",
@@ -5707,9 +5731,9 @@
     "mnc": "06",
     "brand": "Z Mobile",
     "operator": "Dardaphone.Net LLC",
-    "status": "Operational",
+    "status": "Not operational",
     "bands": "MVNO",
-    "notes": "Previously the Monaco MCC/MNC 212-01 was used."
+    "notes": "Previously the Monaco MCC/MNC 212-01 was used; MNC withdrawn"
   },
   {
     "type": "National",
@@ -8637,7 +8661,7 @@
     "operator": "Tele2",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 450 / LTE 800 / LTE 1800 / TD-LTE 2300 / TD-LTE 2500 / LTE 2600",
-    "notes": null
+    "notes": "GSM is not available in Moscow and Moscow Oblast due to lack of license for GSM frequencies"
   },
   {
     "type": "National",
@@ -8733,7 +8757,7 @@
     "operator": "K-Telecom",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 2600",
-    "notes": "Unapproved use in Crimea only"
+    "notes": "Unapproved use on Annexed territories only. Works in national roaming outside the unrecognized regions without additional fees."
   },
   {
     "type": "National",
@@ -8745,7 +8769,7 @@
     "operator": "Sevtelekom",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 1800",
-    "notes": "Unapproved use in Crimea only"
+    "notes": "Unapproved use on Annexed territories only"
   },
   {
     "type": "National",
@@ -8757,7 +8781,7 @@
     "operator": "Krymtelekom",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100",
-    "notes": "Unapproved use in Crimea only"
+    "notes": "Unapproved use on Annexed territories only"
   },
   {
     "type": "National",
@@ -8769,7 +8793,7 @@
     "operator": "EKATERINBURG-2000",
     "status": "Operational",
     "bands": "GSM 1800 / LTE 1800 / TD-LTE 2600",
-    "notes": null
+    "notes": "Covers only Sverdlovsk, Kurgan, KMAO and YaNAO regions. Works in national roaming outside the coverage area."
   },
   {
     "type": "National",
@@ -8849,11 +8873,11 @@
     "countryCode": "RU",
     "mcc": "250",
     "mnc": "54",
-    "brand": "TTK",
-    "operator": "Tattelecom",
-    "status": "Not operational",
-    "bands": "LTE 1800",
-    "notes": null
+    "brand": "Miranda-Media",
+    "operator": "Miranda-Media",
+    "status": "Operational",
+    "bands": "GSM 900 / UMTS 2100 / LTE",
+    "notes": "Unapproved use on Annexed territories only. Previously used by Tattelecom"
   },
   {
     "type": "National",
@@ -8877,7 +8901,7 @@
     "operator": "KTK Telecom",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 2600",
-    "notes": "Unapproved use in Crimea only"
+    "notes": "Unapproved use on Annexed territories only. Works in national roaming outside the unrecognized regions without additional fees."
   },
   {
     "type": "National",
@@ -8949,7 +8973,7 @@
     "operator": "K-Telecom",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 2600",
-    "notes": "Unapproved use in Zaporizhzhia and Kherson Oblast only"
+    "notes": "Unapproved use on Annexed territories only. Works in national roaming outside the unrecognized regions without additional fees."
   },
   {
     "type": "National",
@@ -8961,7 +8985,7 @@
     "operator": "State Unitary Enterprise of DPR \"Republican Telecommunications Operator\"",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 800 / LTE 900 / LTE 1800 / LTE 2600",
-    "notes": "Unapproved use in Donetsk People's Republic only"
+    "notes": "Unapproved use on Annexed territories only. Works in national roaming outside the unrecognized regions."
   },
   {
     "type": "National",
@@ -8973,7 +8997,7 @@
     "operator": "OOO \"MKS\"",
     "status": "Operational",
     "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 800 / LTE 900 / LTE 1800 / LTE 2600",
-    "notes": "Unapproved use in Luhansk People's Republic only"
+    "notes": "Unapproved use on Annexed territories only. Works in national roaming outside the unrecognized regions."
   },
   {
     "type": "National",
@@ -14911,9 +14935,9 @@
     "mnc": "030",
     "brand": "AT&T",
     "operator": "AT&T Mobility",
-    "status": "Operational",
+    "status": "Not operational",
     "bands": "GSM 850",
-    "notes": "Former Centennial Wireless"
+    "notes": "Former Centennial Wireless; MNC withdrawn"
   },
   {
     "type": "National",
@@ -16113,7 +16137,7 @@
     "operator": "TX RSA 15B2, LP",
     "status": "Not operational",
     "bands": "CDMA",
-    "notes": "Owned by West Central Wireless; shut down Aug 2023"
+    "notes": "Owned by West Central Wireless; shut down Aug 2023; MNC withdrawn"
   },
   {
     "type": "National",
@@ -16389,7 +16413,7 @@
     "operator": "Mid-Tex Cellular Ltd.",
     "status": "Not operational",
     "bands": "CDMA 850 / CDMA 1900",
-    "notes": "Texas; shut down Aug 2023"
+    "notes": "Texas; shut down Aug 2023; MNC withdrawn"
   },
   {
     "type": "National",
@@ -17971,9 +17995,9 @@
     "mnc": "980",
     "brand": null,
     "operator": "LigTel Communications",
-    "status": "Unknown",
+    "status": "Not operational",
     "bands": "Unknown",
-    "notes": null
+    "notes": "MNC withdrawn"
   },
   {
     "type": "National",
@@ -18643,9 +18667,9 @@
     "mnc": "550",
     "brand": null,
     "operator": "Great Plains Communications, Inc.",
-    "status": "Unknown",
+    "status": "Not operational",
     "bands": "Unknown",
-    "notes": null
+    "notes": "MNC withdrawn"
   },
   {
     "type": "National",
@@ -19171,9 +19195,9 @@
     "mnc": "990",
     "brand": "Premier Broadband",
     "operator": "Premier Holdings LLC",
-    "status": "Unknown",
+    "status": "Not operational",
     "bands": "Unknown",
-    "notes": null
+    "notes": "MNC withdrawn"
   },
   {
     "type": "National",
@@ -20657,11 +20681,11 @@
     "countryCode": "US",
     "mcc": "314",
     "mnc": "370",
-    "brand": null,
+    "brand": "ITEC",
     "operator": "Texas A&M University",
     "status": "Unknown",
     "bands": "Unknown",
-    "notes": null
+    "notes": "Internet2 Technology Evaluation Center"
   },
   {
     "type": "National",
@@ -20806,6 +20830,54 @@
     "status": "Operational",
     "bands": "TD-LTE 3500",
     "notes": "CBRS"
+  },
+  {
+    "type": "National",
+    "countryName": "United States of America",
+    "countryCode": "US",
+    "mcc": "314",
+    "mnc": "500",
+    "brand": null,
+    "operator": "Aetheros Inc.",
+    "status": "Unknown",
+    "bands": "Unknown",
+    "notes": null
+  },
+  {
+    "type": "National",
+    "countryName": "United States of America",
+    "countryCode": "US",
+    "mcc": "314",
+    "mnc": "510",
+    "brand": null,
+    "operator": "SI Wireless LLC",
+    "status": "Unknown",
+    "bands": "Unknown",
+    "notes": null
+  },
+  {
+    "type": "National",
+    "countryName": "United States of America",
+    "countryCode": "US",
+    "mcc": "314",
+    "mnc": "520",
+    "brand": "OG+E",
+    "operator": "Oklahoma Gas & Electric Company",
+    "status": "Unknown",
+    "bands": "Unknown",
+    "notes": null
+  },
+  {
+    "type": "National",
+    "countryName": "United States of America",
+    "countryCode": "US",
+    "mcc": "314",
+    "mnc": "530",
+    "brand": null,
+    "operator": "Agile Networks",
+    "status": "Operational",
+    "bands": "Unknown",
+    "notes": null
   },
   {
     "type": "National",
@@ -30293,11 +30365,11 @@
     "countryCode": "NZ",
     "mcc": "530",
     "mnc": "04",
-    "brand": "TelstraClear",
-    "operator": "TelstraClear",
+    "brand": "One NZ",
+    "operator": "One NZ",
     "status": "Not operational",
     "bands": "UMTS 2100",
-    "notes": null
+    "notes": "Former TelstraClear, Vodafone"
   },
   {
     "type": "National",
@@ -30334,6 +30406,18 @@
     "status": "Unknown",
     "bands": "Unknown",
     "notes": "Former Bluereach Limited"
+  },
+  {
+    "type": "National",
+    "countryName": "New Zealand",
+    "countryCode": "NZ",
+    "mcc": "530",
+    "mnc": "11",
+    "brand": null,
+    "operator": "Interim Māori Spectrum Commission",
+    "status": "Unknown",
+    "bands": "Unknown",
+    "notes": null
   },
   {
     "type": "National",
@@ -35432,8 +35516,8 @@
     "brand": "Algar Telecom",
     "operator": "Algar Telecom S.A.",
     "status": "Operational",
-    "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 700 / LTE 1800 / 5G 2300",
-    "notes": "LTE bands 28 / 3"
+    "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 700 / LTE 1800 / LTE 2300 / 5G 2300",
+    "notes": "LTE bands 28 / 3 / 40"
   },
   {
     "type": "National",
@@ -35444,7 +35528,7 @@
     "brand": "Algar Telecom",
     "operator": "Algar Telecom S.A.",
     "status": "Operational",
-    "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 700 / LTE 1800 / 5G 2300",
+    "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 700 / LTE 1800 / LTE 2300 / 5G 2300",
     "notes": null
   },
   {
@@ -35456,7 +35540,7 @@
     "brand": "Algar Telecom",
     "operator": "Algar Telecom S.A.",
     "status": "Operational",
-    "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 700 / LTE 1800 / 5G 2300",
+    "bands": "GSM 900 / GSM 1800 / UMTS 2100 / LTE 700 / LTE 1800 / LTE 2300 / 5G 2300",
     "notes": null
   },
   {
@@ -35576,7 +35660,7 @@
     "brand": "CLARO CL",
     "operator": "Claro Chile S.A.",
     "status": "Operational",
-    "bands": "GSM 1900 / UMTS 1900 / LTE 700 / LTE 2600",
+    "bands": "GSM 1900 / UMTS 1900 / LTE 700 / LTE 2600 / 5G 3500",
     "notes": null
   },
   {
