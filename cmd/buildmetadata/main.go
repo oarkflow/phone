@@ -2,12 +2,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"github.com/oarkflow/phone"
 	"io"
+	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -18,9 +19,9 @@ import (
 	"strconv"
 	"strings"
 
-	"bytes"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/oarkflow/phone"
 )
 
 type prefixBuild struct {
@@ -65,7 +66,7 @@ func fetchURL(url string) []byte {
 		log.Fatalf("Error fetching URL '%s': %s", url, err)
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Error reading body: %s", err)
 	}
@@ -92,7 +93,7 @@ func svnExport(dir string, url string) {
 	if err = cmd.Start(); err != nil {
 		log.Fatalf("error calling svn export: %s", err.Error())
 	}
-	data, err := io.ReadAll(stderr)
+	data, err := ioutil.ReadAll(stderr)
 	if err != nil {
 		log.Fatalf("error reading svn export: %s : %s", err.Error(), data)
 	}
@@ -121,7 +122,7 @@ func writeFile(filePath string, data []byte) {
 	}
 
 	fmt.Printf("Writing new %s\n", filePath)
-	err := os.WriteFile(filePath, data, os.FileMode(0664))
+	err := ioutil.WriteFile(filePath, data, os.FileMode(0664))
 	if err != nil {
 		log.Fatalf("Error writing '%s': %s", filePath, err)
 	}
@@ -433,7 +434,7 @@ func readMappingsForDir(dir string) map[int]string {
 		log.Fatal(err)
 	}
 	for _, file := range files {
-		body, err := os.ReadFile(file)
+		body, err := ioutil.ReadFile(file)
 		if err != nil {
 			log.Fatal(err)
 		}

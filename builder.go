@@ -11,7 +11,7 @@ import (
 
 // ----------------------------------------------------------------------------
 // Golang port of:
-// https://github.com/googlei18n/libphonenumber/blob/master/tools/java/common/src/com/google/i18n/phonenumbers/BuildMetadataFromXml.java
+// https://github.com/googlei18n/libphonenumber/blob/master/tools/java/common/src/com/google/i18n/phone/BuildMetadataFromXml.java
 // ----------------------------------------------------------------------------
 
 func sp(value string) *string {

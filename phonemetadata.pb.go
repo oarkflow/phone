@@ -933,32 +933,32 @@ func file_phonemetadata_proto_rawDescGZIP() []byte {
 
 var file_phonemetadata_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_phonemetadata_proto_goTypes = []interface{}{
-	(*NumberFormat)(nil),            // 0: phonenumbers.NumberFormat
-	(*PhoneNumberDesc)(nil),         // 1: phonenumbers.PhoneNumberDesc
-	(*PhoneMetadata)(nil),           // 2: phonenumbers.PhoneMetadata
-	(*PhoneMetadataCollection)(nil), // 3: phonenumbers.PhoneMetadataCollection
+	(*NumberFormat)(nil),            // 0: phone.NumberFormat
+	(*PhoneNumberDesc)(nil),         // 1: phone.PhoneNumberDesc
+	(*PhoneMetadata)(nil),           // 2: phone.PhoneMetadata
+	(*PhoneMetadataCollection)(nil), // 3: phone.PhoneMetadataCollection
 }
 var file_phonemetadata_proto_depIdxs = []int32{
-	1,  // 0: phonenumbers.PhoneMetadata.general_desc:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 1: phonenumbers.PhoneMetadata.fixed_line:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 2: phonenumbers.PhoneMetadata.mobile:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 3: phonenumbers.PhoneMetadata.toll_free:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 4: phonenumbers.PhoneMetadata.premium_rate:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 5: phonenumbers.PhoneMetadata.shared_cost:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 6: phonenumbers.PhoneMetadata.personal_number:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 7: phonenumbers.PhoneMetadata.voip:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 8: phonenumbers.PhoneMetadata.pager:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 9: phonenumbers.PhoneMetadata.uan:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 10: phonenumbers.PhoneMetadata.emergency:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 11: phonenumbers.PhoneMetadata.voicemail:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 12: phonenumbers.PhoneMetadata.short_code:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 13: phonenumbers.PhoneMetadata.standard_rate:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 14: phonenumbers.PhoneMetadata.carrier_specific:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 15: phonenumbers.PhoneMetadata.sms_services:type_name -> phonenumbers.PhoneNumberDesc
-	1,  // 16: phonenumbers.PhoneMetadata.no_international_dialling:type_name -> phonenumbers.PhoneNumberDesc
-	0,  // 17: phonenumbers.PhoneMetadata.number_format:type_name -> phonenumbers.NumberFormat
-	0,  // 18: phonenumbers.PhoneMetadata.intl_number_format:type_name -> phonenumbers.NumberFormat
-	2,  // 19: phonenumbers.PhoneMetadataCollection.metadata:type_name -> phonenumbers.PhoneMetadata
+	1,  // 0: phone.PhoneMetadata.general_desc:type_name -> phone.PhoneNumberDesc
+	1,  // 1: phone.PhoneMetadata.fixed_line:type_name -> phone.PhoneNumberDesc
+	1,  // 2: phone.PhoneMetadata.mobile:type_name -> phone.PhoneNumberDesc
+	1,  // 3: phone.PhoneMetadata.toll_free:type_name -> phone.PhoneNumberDesc
+	1,  // 4: phone.PhoneMetadata.premium_rate:type_name -> phone.PhoneNumberDesc
+	1,  // 5: phone.PhoneMetadata.shared_cost:type_name -> phone.PhoneNumberDesc
+	1,  // 6: phone.PhoneMetadata.personal_number:type_name -> phone.PhoneNumberDesc
+	1,  // 7: phone.PhoneMetadata.voip:type_name -> phone.PhoneNumberDesc
+	1,  // 8: phone.PhoneMetadata.pager:type_name -> phone.PhoneNumberDesc
+	1,  // 9: phone.PhoneMetadata.uan:type_name -> phone.PhoneNumberDesc
+	1,  // 10: phone.PhoneMetadata.emergency:type_name -> phone.PhoneNumberDesc
+	1,  // 11: phone.PhoneMetadata.voicemail:type_name -> phone.PhoneNumberDesc
+	1,  // 12: phone.PhoneMetadata.short_code:type_name -> phone.PhoneNumberDesc
+	1,  // 13: phone.PhoneMetadata.standard_rate:type_name -> phone.PhoneNumberDesc
+	1,  // 14: phone.PhoneMetadata.carrier_specific:type_name -> phone.PhoneNumberDesc
+	1,  // 15: phone.PhoneMetadata.sms_services:type_name -> phone.PhoneNumberDesc
+	1,  // 16: phone.PhoneMetadata.no_international_dialling:type_name -> phone.PhoneNumberDesc
+	0,  // 17: phone.PhoneMetadata.number_format:type_name -> phone.NumberFormat
+	0,  // 18: phone.PhoneMetadata.intl_number_format:type_name -> phone.NumberFormat
+	2,  // 19: phone.PhoneMetadataCollection.metadata:type_name -> phone.PhoneMetadata
 	20, // [20:20] is the sub-list for method output_type
 	20, // [20:20] is the sub-list for method input_type
 	20, // [20:20] is the sub-list for extension type_name

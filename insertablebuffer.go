@@ -11,7 +11,7 @@ package phone
 
 import (
 	"bytes"
-	"github.com/oarkflow/errors"
+	"errors"
 	"io"
 	"unicode/utf8"
 )
