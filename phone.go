@@ -2,9 +2,10 @@ package phone
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/oarkflow/errors"
 	"github.com/oarkflow/pkg/pool"
-	"strings"
 )
 
 var Type = map[int]string{
@@ -301,14 +302,13 @@ func (p *Numbers) StatsByCarrier() CarrierStats {
 		if num.CarrierNnc != "" {
 			hash = hash + ":" + num.CarrierNnc
 		}
-		hash = hash + ":" + num.PhoneTypeHuman
+		hash = hash + ":" + num.CarrierName
 		analyzeResult := &AnalyzeCarrierResult{
 			CarrierName: num.CarrierName,
 			CarrierCode: num.CarrierNnc,
 			CountryCode: num.CountryCode,
 			PhoneType:   num.PhoneTypeHuman,
 		}
-
 		if rs[hash] == nil {
 			analyzeResult.PhoneCount = 1
 			rs[hash] = analyzeResult
@@ -346,7 +346,7 @@ func (p *Numbers) StatsByCountry() CountryStats {
 			continue
 		}
 		hash := num.CountryCode
-		hash = hash + ":" + num.PhoneTypeHuman
+		hash = hash + ":" + num.CountryCode
 		analyzeResult := &AnalyzeCountryResult{
 			CountryCode: num.CountryCode,
 			PhoneType:   num.PhoneTypeHuman,

@@ -71,13 +71,22 @@ func main() {
 			}
 		}
 	}
-	fmt.Println(fmt.Sprintf("%s", time.Since(start)))
+	fmt.Printf("%s\n", time.Since(start))
 
 	fmt.Println(phone.Verify("9856034616", "NP"))
-	fmt.Println(phone.VerifyList([]string{"9856034616", "9856034617"}, "NP"))
+	fmt.Println(phone.VerifyList([]string{"9856034616", "9805832689"}, "NP"))
 	fmt.Println(phone.VerifyList([]string{"9856034616", "9856034617"}, "IN"))
-	fmt.Println(phone.StatsByCarrier([]string{"9856034616", "9856034617", "919851446878"}, "NP"))
-	fmt.Println(phone.StatsByCountry([]string{"9856034616", "9856034617", "919851446878"}, "NP"))
+	carrierStats := phone.StatsByCarrier([]string{"9856034616", "9805832689", "919851446878"}, "NP")
+	fmt.Println("Stats by Carrier:")
+
+	for _, v := range carrierStats.RS {
+		fmt.Println(v)
+	}
+	fmt.Println("Stats by Country:")
+	countryStats := phone.StatsByCountry([]string{"9856034616", "9805832689", "919851446878"}, "NP")
+	for _, v := range countryStats.RS {
+		fmt.Println(v)
+	}
 	fmt.Println(phone.Clean([]string{"9856034616", "9856034617", "919851446878"}, "NP"))
 }
 
