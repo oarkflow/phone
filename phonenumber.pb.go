@@ -25,10 +25,11 @@
 package phone
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -176,7 +177,7 @@ type PhoneNumber struct {
 	// to store alphanumerical numbers such as "1-800-GOOG-411".
 	RawInput *string `protobuf:"bytes,5,opt,name=raw_input,json=rawInput" json:"raw_input,omitempty"`
 	// The source from which the country_code is derived.
-	CountryCodeSource *PhoneNumber_CountryCodeSource `protobuf:"varint,6,opt,name=country_code_source,json=countryCodeSource,enum=phone.PhoneNumber_CountryCodeSource" json:"country_code_source,omitempty"`
+	CountryCodeSource *PhoneNumber_CountryCodeSource `protobuf:"varint,6,opt,name=country_code_source,json=countryCodeSource,enum=phonenumbers.PhoneNumber_CountryCodeSource" json:"country_code_source,omitempty"`
 	// The carrier selection code that is preferred when calling this phone number
 	// domestically. This also includes codes that need to be dialed in some
 	// countries when calling from landlines to mobiles or vice versa. For
@@ -343,11 +344,11 @@ func file_phonenumber_proto_rawDescGZIP() []byte {
 var file_phonenumber_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_phonenumber_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_phonenumber_proto_goTypes = []interface{}{
-	(PhoneNumber_CountryCodeSource)(0), // 0: phone.PhoneNumber.CountryCodeSource
-	(*PhoneNumber)(nil),                // 1: phone.PhoneNumber
+	(PhoneNumber_CountryCodeSource)(0), // 0: phonenumbers.PhoneNumber.CountryCodeSource
+	(*PhoneNumber)(nil),                // 1: phonenumbers.PhoneNumber
 }
 var file_phonenumber_proto_depIdxs = []int32{
-	0, // 0: phone.PhoneNumber.country_code_source:type_name -> phone.PhoneNumber.CountryCodeSource
+	0, // 0: phonenumbers.PhoneNumber.country_code_source:type_name -> phonenumbers.PhoneNumber.CountryCodeSource
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

@@ -1,0 +1,10 @@
+[
+  {"name": "Test networks", "code": "0", "acronym": "TEST"},
+  {"name": "Europe", "code": "2", "acronym": "EUR"},
+  {"name": "North America and the Caribbean", "code": "3", "acronym": "AMERN"},
+  {"name": "Asia and the Middle East", "code": "4", "acronym": "ASIA"},
+  {"name": "Oceania", "code": "5", "acronym": "OCEA"},
+  {"name": "Africa", "code": "6", "acronym": "AFRI"},
+  {"name": "South and Central America", "code": "7", "acronym": "AMERSC"},
+  {"name": "Worldwide", "code": "9", "acronym": "GLOBAL"}
+]

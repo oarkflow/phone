@@ -3,218 +3,235 @@
 const fs = require('fs');
 const path = require('path');
 const jsdom = require('jsdom');
+const plmnutils = require('./plmnutils.js');
+const centroids = require('./centroids.json'); // Converted from http://gothos.info/resources/ country centroids csv file
+const extraplmns = require('./extraplmns.json'); // Specific PLMNs Pod Group has roaming agreements with but wasn't accepted in Wikipedia yet.
 const { JSDOM } = jsdom;
 
-const WIKI_URL = 'https://en.wikipedia.org/wiki/Mobile_country_code';
-const WIKI_URL_REGIONS = [
-  'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_2xx_(Europe)',
-  'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_3xx_(North_America)',
-  'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_4xx_(Asia)',
-  'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_5xx_(Oceania)',
-  'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_6xx_(Africa)',
-  'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_7xx_(South_America)'
+const WIKI_URLS = [
+    'https://en.wikipedia.org/wiki/Mobile_country_code',
+    'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_2xx_(Europe)',
+    'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_3xx_(North_America)',
+    'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_4xx_(Asia)',
+    'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_5xx_(Oceania)',
+    'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_6xx_(Africa)',
+    'https://en.wikipedia.org/wiki/Mobile_Network_Codes_in_ITU_region_7xx_(South_America)'
 ];
 
-const MCC_MNC_OUTPUT_FILE = path.join( __dirname, 'mcc-mnc-list.json');
-const STATUS_CODES_OUTPUT_FILE = path.join( __dirname, 'status-codes.json');
+const MCC_MNC_OUTPUT_FILE = path.join(__dirname, 'mcc-mnc-list.json');
+const STATUS_CODES_OUTPUT_FILE = path.join(__dirname, 'status-codes.json');
+
+fs.writeFileSync(MCC_MNC_OUTPUT_FILE, "");
+
+var statusCodes = [];
+var records = [];
+
+async function fetch(wiki_url) {
+    return new Promise((resolve, reject) => {
+        JSDOM.fromURL(wiki_url).then(dom => {
+            const { window } = dom;
+            var content = window.document.querySelector('#mw-content-text > .mw-parser-output');
+
+            if (!content.hasChildNodes()) {
+                console.log('ERROR - empty content');
+                return;
+            }
+
+            content = removeCiteReferences(content);
+
+            const children = content.childNodes;
+            let recordType, sectionName, countryName = null, countryCode = null;
+
+            nodeList: for (let i = 0; i < children.length; i++) {
+                let node = children[i];
+
+                if (!node.textContent.trim().length) {
+                    // skip empty lines
+                    continue;
+                }
+
+                if (node.nodeName === 'DIV') {
+                    sectionName = node?.querySelector('h2')?.textContent || node?.querySelector('h4')?.textContent
+                }
+
+                if (node.nodeName.indexOf(' – ') !== -1) {
+                    sectionName = JSON.stringify(node.nodeName)
+                }
+
+                if (sectionName) {
+                    recordType = 'other';
+
+                    if (sectionName === 'See also' || sectionName === 'External links' || sectionName === 'National MNC Authorities') {
+                        break nodeList;
+                    }
+
+                    if (sectionName === 'National operators') {
+                        continue;
+                    }
+
+                    if (sectionName.length === 1) {
+                        continue;
+                    }
+
+                    if (sectionName === 'Test networks') {
+                        countryName = null;
+                        countryCode = null;
+                        recordType = 'Test';
+                    }
+
+                    if (sectionName.includes(' – ')) {
+                        let sectionParts = sectionName.split(' – ');
+                        countryName = sectionParts[0];
+                        countryCode = sectionParts[1];
+                        recordType = 'National';
+                    }
+
+                    if (sectionName === 'International operators') {
+                        countryName = null;
+                        countryCode = null;
+                        recordType = 'International';
+                    }
+
+                    if (recordType === 'other') {
+                        console.log('WARN recordType is other', node.textContent);
+                    }
 
 
-function fetch() {
-  let records = [];
-  let statusCodes = [];
 
-  const process = (region, records, statusCodes) => new Promise(resolve => collect (resolve, region, records, statusCodes));
+                    if (node.nodeName === 'TABLE') {
+                        let rows = node.querySelectorAll('tr');
 
-  (async function loop() {
-    
-    for (let i = 0; i < WIKI_URL_REGIONS.length; i++) {
-      const region = WIKI_URL_REGIONS[i];
-      await process(region, records, statusCodes);
-      console.log(region, records.length, statusCodes.length);
-    }
-    
-    await process(WIKI_URL, records, statusCodes, true);
-    console.log(WIKI_URL, records.length, statusCodes.length);
+                        for (let j = 1; j < rows.length; j++) {
+                            let cols = rows[j].querySelectorAll('td');
 
-    writeData(records, statusCodes);
-  })();
-  
-}
+                            if (cols.length < 7) {
+                                console.log('WARN invalid table row:', rows[j], node.textContent);
+                                continue;
+                            }
 
-function collect (resolve, from, records, statusCodes, globals) {
-  JSDOM.fromURL(from).then(dom => {
-    const { window } = dom;
-    var content = window.document.querySelector('#mw-content-text > .mw-parser-output');
+                            let status = cleanup(cols[4].textContent);
+                            if (status === 'Not Operational') {
+                                status = 'Not operational';
+                            }
+                            if (status === 'operational') {
+                                status = 'Operational';
+                            }
 
-    if (!content.hasChildNodes()) {
-      console.log('ERROR - empty content');
-      return;
-    }
+                            if (status && statusCodes.indexOf(status) === -1) {
+                                statusCodes.push(status);
+                            }
 
-    content = removeCiteReferences(content);
+                            var mcc = cleanup(cols[0].textContent);
+                            if (mcc.length > 3)
+                                var mcc = cleanmcc(mcc)
+                            var mnc = cleanup(cols[1].textContent);
+                            var plmn = mcc ? (mnc ? mcc + mnc : null) : null;
+                            var nibbledPlmn = plmn ? plmnutils.encPlmn(mcc, mnc) : null;
+                            var region = plmnutils.getRegion(mcc);
 
-    const children = content.childNodes;
-    let recordType, sectionName, countryName = null, countryCode = null;
+                            // Get last 2 char of countryCode to ensure matching with a ISO 3166-1 alpha-2 code
+                            var geo = countryCode ? getGeo(countryCode.toUpperCase().slice(-2)) : getGeo(null);
 
-    nodeList: for (let i = 0; i < children.length; i++) {
-      let node = children[i];
+                            records.push({
+                                plmn: plmn,
+                                nibbledPlmn: nibbledPlmn,
+                                mcc: mcc,
+                                mnc: mnc,
+                                region: region,
+                                type: recordType,
+                                countryName: countryName,
+                                countryCode: countryCode,
+                                lat: geo.lat,
+                                long: geo.long,
+                                brand: cleanup(cols[2].textContent),
+                                operator: cleanup(cols[3].textContent),
+                                status: status,
+                                bands: cleanup(cols[5].textContent),
+                                notes: cleanup(cols[6].textContent)
+                            })
+                        }
+                    }
+                    console.log('MCC-MNC list saved to ' + MCC_MNC_OUTPUT_FILE);
+                    console.log('Total ' + records.length + ' records');
+                    resolve()
+                }
+            }
+        })
+    })
 
-      if (!node.textContent.trim().length) {
-        // skip empty lines
-        continue;
-      }
-
-      if (node.nodeName === 'H2') {
-        recordType = 'other';
-        sectionName = node.querySelector('.mw-headline').textContent.trim();
-
-        if (sectionName === 'See also' || sectionName === 'External links' || sectionName === 'National MNC Authorities') {
-          break nodeList;
-        }
-
-        if (sectionName === 'National operators') {
-          recordType = 'National';
-        }
-
-        if (sectionName.length === 1) {
-          continue;
-        }
-
-        if (sectionName === 'Test networks') {
-          recordType = 'Test';
-        }
-
-        if (sectionName === 'International operators') {
-          recordType = 'International';
-        }
-
-        if (recordType === 'other') {
-        //  console.log('WARN recordType is other', node.textContent);
-        }
-
-      }
-
-      
-      if (node.nodeName === 'H4') {
-        let countryText = node.querySelector('.mw-headline').textContent.trim();
-        let dashPos = countryText.indexOf('–');
-        countryName = countryText.substr(0, dashPos - 1);
-        countryCode = countryText.substr(dashPos + 2);
-      }
-
-      if (node.nodeName === 'TABLE') {
-        if (globals && recordType === 'National') {
-          continue;
-        }
-
-        let rows = node.querySelectorAll('tr');
-
-        for (let j = 1; j < rows.length; j++) {
-          let cols = rows[j].querySelectorAll('td');
-
-          if (cols.length < 7) {
-        //    console.log('WARN invalid table row:', rows[j], node.textContent);
-            continue;
-          }
-
-          /*
-            Remove hidden child node of first cell:
-
-            <td><div style="overflow:hidden;width:0;height:0;margin:-1ex;float:right">
-              <h3><span class="mw-headline" id="United_States_of_America_-_US_-_313">United States of America - US - 313</span></h3>
-              </div>313
-            </td>
-          */
-          const mccChild = cols[0].querySelector('div');
-          if (mccChild !== null) {
-            cols[0].removeChild(mccChild);
-          }
-
-          let status = cleanup(cols[4].textContent);
-          if (status === 'Not Operational' || status === 'Not opearational') {
-            status = 'Not operational';
-          }
-          if (status === 'operational') {
-            status = 'Operational';
-          }
-
-          if ( status && statusCodes.indexOf( status ) === -1 ) {
-            statusCodes.push( status );
-          }
-
-          records.push({
-            type: recordType,
-            countryName: countryName,
-            countryCode: countryCode,
-            mcc: cleanup(cols[0].textContent),
-            mnc: cleanup(cols[1].textContent),
-            brand: cleanup(cols[2].textContent),
-            operator: cleanup(cols[3].textContent),
-            status: status,
-            bands: cleanup(cols[5].textContent),
-            notes: cleanup(cols[6].textContent)
-          })
-
-        }
-      }
-
-    }
-
-    resolve();
-
-  });
-}
-
-function writeData(records, statusCodes) {
-  fs.writeFile( MCC_MNC_OUTPUT_FILE, JSON.stringify( records, null, 2 ), err => {
-    if ( err ) {
-      throw err;
-    }
-    console.log( 'MCC-MNC list saved to ' + MCC_MNC_OUTPUT_FILE );
-    console.log( 'Total ' + records.length + ' records' );
-  });
-
-  statusCodes.sort();
-
-  fs.writeFile( STATUS_CODES_OUTPUT_FILE, JSON.stringify( statusCodes, null, 2 ), err => {
-    if ( err ) {
-      throw err;
-    }
-    console.log( 'Status codes saved to ' + STATUS_CODES_OUTPUT_FILE );
-  });
 }
 
 function removeCiteReferences(nodes) {
-  let links = nodes.querySelectorAll('a');
-  for (let i = 0; i < links.length; i++) {
-    let link = links[i];
-    let href = link.getAttribute('href');
-    if (href.substr(0, 10) === '#cite_note') {
-      link.remove();
+    let links = nodes.querySelectorAll('a');
+    for (let i = 0; i < links.length; i++) {
+        let link = links[i];
+        let href = link.getAttribute('href');
+        if (href.substr(0, 10) === '#cite_note') {
+            link.remove();
+        }
     }
-  }
 
-  return nodes;
+    return nodes;
 }
 
 function cleanup(str) {
-  str = str.trim();
-  str = removeCitationNeeded(str);
-  if (str.substr(0, 1) === '[' && str.substr(-1) === ']') {
-    // remove brackets-only like [7]
-    str = '';
-  }
-  if (str.substr(0, 1) != '[' && str.substr(-1) === ']') {
-    // remove postfix references like ...[7]
-    let index = str.lastIndexOf('[');
-    str = str.substr(0, index - 1).trim();
-  }
-  str = str.replace(/“/g, '"');
-  return str.length ? str : null;
+    str = str.trim();
+    str = removeCitationNeeded(str);
+    if (str.substr(0, 1) === '[' && str.substr(-1) === ']') {
+        // remove brackets-only like [7]
+        str = '';
+    }
+    if (str.substr(0, 1) != '[' && str.substr(-1) === ']') {
+        // remove postfix references like ...[7]
+        let index = str.lastIndexOf('[');
+        str = str.substr(0, index - 1).trim();
+    }
+    return str.length ? str : null;
 }
 
 function removeCitationNeeded(str) {
-  return str.replace(/\[citation needed\]/g, '');
+    return str.replace(/\[citation needed\]/g, '');
 }
 
-fetch();
+function getGeo(countryCode) {
+    var centroid = centroids.filter(function (el) { return el.ISO3136.toUpperCase() == countryCode });
+
+    if (centroid.length) {
+        return { 'lat': String(centroid[0].LAT), 'long': String(centroid[0].LONG) };
+    } else {
+        return { 'lat': null, 'long': null };
+    }
+}
+
+function cleanmcc(mcc) {
+    var res = mcc.split("\n").pop()
+    return res
+}
+
+async function run() {
+    for (const wiki_url of WIKI_URLS) {
+        await fetch(wiki_url);
+    }
+
+    // Manually appending all specific PLMNs Pod Group has roaming agreements
+    // with but wasn't accepted in Wikipedia yet.
+    //TODO: update the items if they are already in the list. Right now, the script duplicates them
+    records = extraplmns.concat(records);
+    fs.appendFile(MCC_MNC_OUTPUT_FILE, JSON.stringify(records, null, 2), err => {
+        if (err) {
+            throw err;
+        }
+    });
+
+    statusCodes.sort();
+    console.log("fin");
+
+    fs.writeFile(STATUS_CODES_OUTPUT_FILE, JSON.stringify(statusCodes, null, 2), err => {
+        if (err) {
+            throw err;
+        }
+        console.log('Status codes saved to ' + STATUS_CODES_OUTPUT_FILE);
+    });
+}
+
+run()

@@ -2,6 +2,8 @@
 
 const records = require( './mcc-mnc-list.json' );
 const statusCodeList = require( './status-codes.json' );
+const regionList = require('./regions.json');
+const regionNames = regionList.map(function(x) { return x.name });
 
 function all () {
   return records;
@@ -9,6 +11,10 @@ function all () {
 
 function statusCodes () {
   return statusCodeList;
+}
+
+function regions () {
+  return regionList;
 }
 
 function filter ( filters ) {
@@ -20,7 +26,7 @@ function filter ( filters ) {
     throw new TypeError('Invalid parameter (object expected)');
   }
 
-  let statusCode, mcc, mnc, countryCode;
+  let statusCode, mcc, mnc, countryCode, plmn, nibbledPlmn, region;
 
   if (filters.statusCode) {
     statusCode = filters.statusCode;
@@ -29,15 +35,14 @@ function filter ( filters ) {
     }
   }
 
-  if (filters.mccmnc) {
-    let mccmnc;
-    if (typeof filters.mccmnc === 'string' || typeof filters.mccmnc === 'number') {
-      mccmnc = String(filters.mccmnc);
+  if (filters.plmn) {
+    if (typeof filters.plmn === 'string') {
+      plmn = String(filters.plmn);
     } else {
-      throw new TypeError('Invalid mccmnc parameter (string expected)');
+      throw new TypeError('Invalid plmn parameter (string expected)');
     }
-    mcc = mccmnc.substr(0, 3);
-    mnc = mccmnc.substr(3);
+    mcc = plmn.substr(0, 3);
+    mnc = plmn.substr(3);
   }
 
   if (filters.mcc && mcc) {
@@ -62,12 +67,20 @@ function filter ( filters ) {
       throw new TypeError('Invalid mnc parameter (string expected)');
     }
   }
-
+  
   if (filters.countryCode != undefined) {
     if (typeof filters.countryCode === 'string') {
       countryCode = filters.countryCode;
     } else {
       throw new TypeError('Invalid countryCode parameter (string expected)');
+    }
+  }
+
+  if (filters.region) {
+    region = filters.region;
+
+    if (regionNames.indexOf(region) === -1) {
+      throw new TypeError('Invalid region parameter (not found in region list)');
     }
   }
 
@@ -79,19 +92,17 @@ function filter ( filters ) {
   if (countryCode) {
     result = result.filter( record => record['countryCode'] === countryCode );
   }
+  if (region) {
+    result = result.filter( record => record['region'] === region );
+  }
   if (mcc) {
     result = result.filter( record => record['mcc'] === mcc );
   }
   if (mnc) {
     result = result.filter( record => record['mnc'] === mnc );
   }
-
+  
   return result;
 }
 
-function find (filters) {
-  // return the first element of undefined, as filter will always return an array
-  return filter(filters)[0]
-}
-
-module.exports = { all, statusCodes, filter, find };
+module.exports = { all, statusCodes, regions, filter };

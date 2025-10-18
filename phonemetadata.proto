@@ -23,7 +23,7 @@ syntax = "proto2";
 
 option optimize_for = LITE_RUNTIME;
 
-option java_package = "com.google.i18n.phone";
+option java_package = "com.google.i18n.phonenumbers";
 package phone;
 
 message NumberFormat {

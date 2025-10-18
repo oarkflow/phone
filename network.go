@@ -2,18 +2,26 @@ package phone
 
 import (
 	"encoding/json"
+
 	"github.com/oarkflow/pkg/str"
 )
 
 type Network struct {
-	Type        string `json:"type"`
-	Mcc         string `json:"mcc"`
-	Mnc         string `json:"mnc"`
-	CountryName string `json:"countryName"`
-	CountryCode string `json:"countryCode"`
-	Brand       string `json:"brand"`
-	Operator    string `json:"operator"`
-	Status      string `json:"status"`
+	Plmn        string      `json:"plmn"`
+	NibbledPlmn string      `json:"nibbledPlmn"`
+	Mcc         string      `json:"mcc"`
+	Mnc         string      `json:"mnc"`
+	Region      string      `json:"region"`
+	Type        string      `json:"type"`
+	CountryName string      `json:"countryName"`
+	CountryCode string      `json:"countryCode"`
+	Lat         string      `json:"lat"`
+	Long        string      `json:"long"`
+	Brand       string      `json:"brand"`
+	Operator    string      `json:"operator"`
+	Status      string      `json:"status"`
+	Bands       string      `json:"bands"`
+	Notes       interface{} `json:"notes"`
 }
 
 var CountryNetwork = map[string][]Network{}

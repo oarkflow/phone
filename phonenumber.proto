@@ -19,7 +19,7 @@
 
 syntax = "proto2";
 
-option java_package = "com.google.i18n.phone";
+option java_package = "com.google.i18n.phonenumbers";
 option optimize_for = LITE_RUNTIME;
 
 package phone;

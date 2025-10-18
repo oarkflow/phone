@@ -11,7 +11,7 @@ import (
 
 // ----------------------------------------------------------------------------
 // Golang port of:
-// https://github.com/googlei18n/libphonenumber/blob/master/tools/java/common/src/com/google/i18n/phone/BuildMetadataFromXml.java
+// https://github.com/googlei18n/libphonenumber/blob/master/tools/java/common/src/com/google/i18n/phonenumbers/BuildMetadataFromXml.java
 // ----------------------------------------------------------------------------
 
 func sp(value string) *string {
@@ -575,9 +575,8 @@ type PhoneNumberMetadataE struct {
 }
 
 // <!ELEMENT territory (references?, availableFormats?, generalDesc, noInternationalDialling?,
-//
-//	fixedLine?, mobile?, pager?, tollFree?, premiumRate?,
-//	sharedCost?, personalNumber?, voip?, uan?, voicemail?)>
+// fixedLine?, mobile?, pager?, tollFree?, premiumRate?,
+// sharedCost?, personalNumber?, voip?, uan?, voicemail?)>
 type TerritoryE struct {
 	// <!ATTLIST territory id CDATA #REQUIRED>
 	ID string `xml:"id,attr"`
@@ -671,7 +670,7 @@ type TerritoryE struct {
 	ShortCode *PhoneNumberDescE `xml:"shortCode"`
 
 	// <!ELEMENT uan (nationalNumberPattern, possibleLengths, exampleNumber)>
-	Emergency *PhoneNumberDescE `xml:"Emergency"`
+	Emergency *PhoneNumberDescE `xml:"emergency"`
 
 	// <!ELEMENT voicemail (nationalNumberPattern, possibleLengths, exampleNumber)>
 	CarrierSpecific *PhoneNumberDescE `xml:"carrierSpecific"`
