@@ -24,7 +24,7 @@ syntax = "proto2";
 option optimize_for = LITE_RUNTIME;
 
 option java_package = "com.google.i18n.phonenumbers";
-package phone;
+package phonenumbers;
 
 message NumberFormat {
   // pattern is a regex that is used to match the national (significant)

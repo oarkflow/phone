@@ -1,3 +1,5 @@
+// Port of tools/.../BuildMetadataFromXml.java from google/libphonenumber.
+// Functions are kept in upstream source order to ease syncing.
 package phone
 
 import (
@@ -8,11 +10,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-// ----------------------------------------------------------------------------
-// Golang port of:
-// https://github.com/googlei18n/libphonenumber/blob/master/tools/java/common/src/com/google/i18n/phonenumbers/BuildMetadataFromXml.java
-// ----------------------------------------------------------------------------
 
 func sp(value string) *string {
 	if value == "" {
@@ -39,6 +36,19 @@ func BuildPhoneMetadataCollection(inputXML []byte, liteBuild bool, specialBuild 
 	return buildPhoneMetadataFromElement(metadata, liteBuild, specialBuild, isShortNumberMetadata, isAlternateFormatsMetadata)
 }
 
+// BuildAlternateFormatsMetadataCollection compiles PhoneNumberAlternateFormats.xml. The alternate
+// formats provide additional formatting patterns keyed by country calling code (the territory
+// elements carry no region id), used by PhoneNumberMatcher's grouping leniency checks. No
+// PhoneNumberDesc patterns are processed for this metadata.
+func BuildAlternateFormatsMetadataCollection(inputXML []byte) (*PhoneMetadataCollection, error) {
+	metadata := &PhoneNumberMetadataE{}
+	err := xml.Unmarshal(inputXML, metadata)
+	if err != nil {
+		panic(fmt.Sprintf("Error unmarshalling XML: %s", err))
+	}
+	return buildPhoneMetadataFromElement(metadata, false, false, false, true)
+}
+
 func buildPhoneMetadataFromElement(document *PhoneNumberMetadataE, liteBuild bool, specialBuild bool, isShortNumberMetadata bool, isAlternateFormatsMetadata bool) (*PhoneMetadataCollection, error) {
 	collection := PhoneMetadataCollection{}
 	numOfTerritories := len(document.Territories)
@@ -47,6 +57,13 @@ func buildPhoneMetadataFromElement(document *PhoneNumberMetadataE, liteBuild boo
 		regionCode := territoryElement.ID
 
 		metadata := loadCountryMetadata(regionCode, &territoryElement, isShortNumberMetadata, isAlternateFormatsMetadata)
+		if isAlternateFormatsMetadata && metadata.Id == nil {
+			// Alternate-formats territories carry no region id; upstream still sets
+			// the (required) id field to the empty string. sp() maps "" to nil, so
+			// set it explicitly to keep the proto's required field present.
+			empty := ""
+			metadata.Id = &empty
+		}
 		collection.Metadata = append(collection.Metadata, metadata)
 	}
 	return &collection, nil
@@ -388,7 +405,7 @@ func populatePossibleLengthSets(data []*PhoneNumberDescE, lengths map[int32]bool
  * missing. For all other types, the parent description will only be used to fill in missing
  * components if the type has a partial definition. For example, if no "tollFree" element exists,
  * we assume there are no toll free numbers for that locale, and return a phone number description
- * with "NA" for both the national and possible number patterns. Note that the parent description
+ * with no national number data and [-1] for the possible lengths. Note that the parent description
  * must therefore already be processed before this method is called on any child elements.
  *
  * @param parentDesc  a generic phone number description that will be used to fill in missing
@@ -403,7 +420,10 @@ func populatePossibleLengthSets(data []*PhoneNumberDescE, lengths map[int32]bool
 func processPhoneNumberDescElement(parentDesc *PhoneNumberDesc, element *PhoneNumberDescE) *PhoneNumberDesc {
 	numberDesc := PhoneNumberDesc{}
 	if element == nil {
-		numberDesc.NationalNumberPattern = sp("NA")
+		// -1 will never match a possible phone number length, so is safe to use to ensure this
+		// never matches. We don't leave it empty, since for compression reasons, we use the empty
+		// list to mean that the generalDesc possible lengths apply.
+		numberDesc.PossibleLength = []int32{-1}
 		return &numberDesc
 	}
 	if parentDesc != nil {
@@ -550,7 +570,10 @@ func setRelevantDescPatterns(metadata *PhoneMetadata, element *TerritoryE, isSho
 		metadata.Voicemail = processPhoneNumberDescElement(generalDesc, element.VoiceMail)
 		metadata.NoInternationalDialling = processPhoneNumberDescElement(generalDesc, element.NoInternationalDialing)
 
-		mobileAndFixedAreSame := *metadata.Mobile.NationalNumberPattern == *metadata.FixedLine.NationalNumberPattern
+		// Use the nil-safe getters (which return "" for an absent pattern) to
+		// match upstream: a region may legitimately have no mobile or fixed-line
+		// pattern, in which case the values compare as empty rather than panic.
+		mobileAndFixedAreSame := metadata.GetMobile().GetNationalNumberPattern() == metadata.GetFixedLine().GetNationalNumberPattern()
 		if metadata.GetSameMobileAndFixedLinePattern() != mobileAndFixedAreSame {
 			metadata.SameMobileAndFixedLinePattern = bp(mobileAndFixedAreSame)
 		}
@@ -565,6 +588,7 @@ func setRelevantDescPatterns(metadata *PhoneMetadata, element *TerritoryE, isSho
 		metadata.Emergency = processPhoneNumberDescElement(generalDesc, element.Emergency)
 		metadata.TollFree = processPhoneNumberDescElement(generalDesc, element.TollFree)
 		metadata.PremiumRate = processPhoneNumberDescElement(generalDesc, element.PremiumRate)
+		metadata.SmsServices = processPhoneNumberDescElement(generalDesc, element.SmsServices)
 	}
 }
 
@@ -612,7 +636,7 @@ type TerritoryE struct {
 	NationalPrefixTransformRule string `xml:"nationalPrefixTransformRule,attr"`
 
 	// <!ATTLIST territory preferredExtnPrefix CDATA #IMPLIED>
-	PreferredExtnPrefix string `xml:"PreferredExtnPrefix"`
+	PreferredExtnPrefix string `xml:"preferredExtnPrefix,attr"`
 
 	// <!ATTLIST territory nationalPrefixOptionalWhenFormatting (true) #IMPLIED>
 	NationalPrefixOptionalWhenFormatting bool `xml:"nationalPrefixOptionalWhenFormatting,attr"`
@@ -631,7 +655,7 @@ type TerritoryE struct {
 	GeneralDesc *PhoneNumberDescE `xml:"generalDesc"`
 
 	// <!ELEMENT noInternationalDialling (nationalNumberPattern, possibleLengths, exampleNumber)>
-	NoInternationalDialing *PhoneNumberDescE `xml:"noInternationalDialing"`
+	NoInternationalDialing *PhoneNumberDescE `xml:"noInternationalDialling"`
 
 	// <!ELEMENT fixedLine (nationalNumberPattern, possibleLengths, exampleNumber)>
 	FixedLine *PhoneNumberDescE `xml:"fixedLine"`
@@ -674,6 +698,9 @@ type TerritoryE struct {
 
 	// <!ELEMENT voicemail (nationalNumberPattern, possibleLengths, exampleNumber)>
 	CarrierSpecific *PhoneNumberDescE `xml:"carrierSpecific"`
+
+	// <!ELEMENT smsServices (nationalNumberPattern, possibleLengths, exampleNumber)>
+	SmsServices *PhoneNumberDescE `xml:"smsServices"`
 }
 
 // <!ELEMENT numberFormat (leadingDigits*, format, intlFormat*)>

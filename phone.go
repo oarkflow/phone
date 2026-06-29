@@ -2,9 +2,9 @@ package phone
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
-	"github.com/oarkflow/errors"
 	"github.com/oarkflow/pkg/pool"
 )
 
@@ -139,62 +139,56 @@ func (p *Number) Verify(getCarrierInfo ...bool) {
 	if len(getCarrierInfo) > 0 && !getCarrierInfo[0] {
 		carrierInfo = false
 	}
-	var num *PhoneNumber
-	var e error
-	p.Phone = strings.Trim(p.Phone, " ")
-	if strings.HasPrefix(p.Phone, "00") {
-		p.Phone = strings.Replace(p.Phone, "00", "+", 1)
+
+	raw := strings.TrimSpace(p.Phone)
+	defaultRegion := strings.ToUpper(strings.TrimSpace(p.DefaultPrefix))
+	p.resetVerification(raw, defaultRegion)
+	if strings.HasPrefix(raw, "00") {
+		raw = "+" + strings.TrimPrefix(raw, "00")
+		p.Phone = raw
 	}
-	hasPlusSymbol := strings.HasPrefix(p.Phone, "+")
-	phoneWithoutPlus := strings.Replace(p.Phone, "+", "", 1)
-	phoneWithPlus := "+" + phoneWithoutPlus
-	if hasPlusSymbol {
-		num, e = Parse(phoneWithPlus, "")
-	} else {
-		num, e = Parse(phoneWithoutPlus, strings.ToUpper(p.DefaultPrefix))
+
+	region := defaultRegion
+	if strings.HasPrefix(raw, "+") {
+		region = ""
 	}
-	p.PhoneType = int(GetNumberType(num))
-	if e == nil && (p.PhoneType == 10 || p.PhoneType == 11) {
-		e = errors.New("unknown phone number")
+	num, err := Parse(raw, region)
+	if err != nil && !strings.HasPrefix(raw, "+") {
+		// Preserve the package's historical fallback for unprefixed
+		// international numbers when the supplied region cannot parse them.
+		num, err = Parse("+"+raw, "")
 	}
-	if e != nil {
-		num, e = Parse(phoneWithPlus, "")
-	}
-	if e != nil {
-		num = nil
-		p.Invalid = true
-		return
-	}
-	p.PhoneType = int(GetNumberType(num))
-	region := GetRegionCodeForNumber(num)
-	p.CountryCode = region
-	p.DefaultPrefix = region
-	p.PhoneTypeHuman = Type[p.PhoneType]
-	if p.PhoneType == 10 || p.PhoneType == 11 {
-		num = nil
+	if err != nil || num == nil || !IsValidNumber(num) {
 		p.Invalid = true
 		return
 	}
 
-	p.Phone = Format(num, E164)
-	timezones, e := GetTimezonesForNumber(num)
-	if e != nil {
-		num = nil
+	p.PhoneType = int(GetNumberType(num))
+	if p.PhoneType == int(UNKNOWN) {
 		p.Invalid = true
 		return
 	}
-	if len(timezones) > 0 {
+
+	region = GetRegionCodeForNumber(num)
+	p.CountryCode, p.DefaultPrefix = region, region
+	p.PhoneTypeHuman = Type[p.PhoneType]
+	p.Phone = Format(num, E164)
+	if timezones, err := GetTimezonesForNumber(num); err == nil && len(timezones) > 0 {
 		p.Timezone = timezones[0]
 	}
 	p.DialCode = num.GetCountryCode()
 
-	country, _ := Countries[region]
-	p.CountryName = country.Name
-	p.Currency = country.Currency
-	p.CurrencySymbol = country.CurrencySymbol
+	if country, found := Countries[region]; found {
+		p.CountryName = country.Name
+		p.Currency = country.Currency
+		p.CurrencySymbol = country.CurrencySymbol
+	}
 	if carrierInfo {
-		carrier, _ := GetCarrierForNumber(num, "EN")
+		carrier, _ := GetCarrierForNumber(num, "en")
 		p.CarrierName = carrier
+		if carrier != "" {
+			_ = LoadNetworks()
+		}
 		networks := CountryNetwork[region]
 		for _, net := range networks {
 			if carrier != "" && (strings.Contains(strings.ToLower(net.Brand), strings.ToLower(carrier)) ||
@@ -206,6 +200,24 @@ func (p *Number) Verify(getCarrierInfo ...bool) {
 			}
 		}
 	}
+}
+
+func (p *Number) resetVerification(phone, defaultRegion string) {
+	p.Phone = phone
+	p.DefaultPrefix = defaultRegion
+	p.PhoneTypeHuman = ""
+	p.CarrierName = ""
+	p.CarrierMcc = ""
+	p.CarrierMnc = ""
+	p.CarrierNnc = ""
+	p.CountryName = ""
+	p.CountryCode = ""
+	p.Currency = ""
+	p.CurrencySymbol = ""
+	p.Timezone = ""
+	p.Invalid = false
+	p.DialCode = 0
+	p.PhoneType = int(UNKNOWN)
 }
 
 func (p *Numbers) Verify() VerifiedNumbers {
@@ -320,7 +332,13 @@ func (p *Numbers) StatsByCarrier() CarrierStats {
 	for _, val := range rs {
 		stats.RS = append(stats.RS, val)
 	}
-	rs = nil
+	sort.Slice(stats.RS, func(i, j int) bool {
+		if stats.RS[i].CountryCode != stats.RS[j].CountryCode {
+			return stats.RS[i].CountryCode < stats.RS[j].CountryCode
+		}
+		return stats.RS[i].CarrierCode < stats.RS[j].CarrierCode
+	})
+	stats.Result = rs
 	return stats
 }
 
@@ -345,8 +363,7 @@ func (p *Numbers) StatsByCountry() CountryStats {
 			stats.InvalidCount += 1
 			continue
 		}
-		hash := num.CountryCode
-		hash = hash + ":" + num.CountryCode
+		hash := num.CountryCode + ":" + num.PhoneTypeHuman
 		analyzeResult := &AnalyzeCountryResult{
 			CountryCode: num.CountryCode,
 			PhoneType:   num.PhoneTypeHuman,
@@ -362,7 +379,13 @@ func (p *Numbers) StatsByCountry() CountryStats {
 	for _, val := range rs {
 		stats.RS = append(stats.RS, val)
 	}
-	rs = nil
+	sort.Slice(stats.RS, func(i, j int) bool {
+		if stats.RS[i].CountryCode != stats.RS[j].CountryCode {
+			return stats.RS[i].CountryCode < stats.RS[j].CountryCode
+		}
+		return stats.RS[i].PhoneType < stats.RS[j].PhoneType
+	})
+	stats.Result = rs
 	return stats
 }
 

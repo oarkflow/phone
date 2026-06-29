@@ -2,6 +2,7 @@ package phone
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/oarkflow/pkg/str"
 )
@@ -26,18 +27,30 @@ type Network struct {
 
 var CountryNetwork = map[string][]Network{}
 
+var (
+	networksOnce sync.Once
+	networksErr  error
+)
+
 func LoadNetworks() error {
-	data, err := str.DecodeBinaryString(networkMap)
-	if err != nil {
-		return err
-	}
-	var items []Network
-	err = json.Unmarshal(data, &items)
-	if err != nil {
-		return err
-	}
-	for _, mp := range items {
-		CountryNetwork[mp.CountryCode] = append(CountryNetwork[mp.CountryCode], mp)
-	}
-	return nil
+	networksOnce.Do(func() {
+		data, err := str.DecodeBinaryString(networkMap)
+		if err != nil {
+			networksErr = err
+			return
+		}
+
+		var items []Network
+		if err := json.Unmarshal(data, &items); err != nil {
+			networksErr = err
+			return
+		}
+
+		byCountry := make(map[string][]Network)
+		for _, item := range items {
+			byCountry[item.CountryCode] = append(byCountry[item.CountryCode], item)
+		}
+		CountryNetwork = byCountry
+	})
+	return networksErr
 }

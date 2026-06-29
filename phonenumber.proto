@@ -22,7 +22,7 @@ syntax = "proto2";
 option java_package = "com.google.i18n.phonenumbers";
 option optimize_for = LITE_RUNTIME;
 
-package phone;
+package phonenumbers;
 
 message PhoneNumber {
   // The country calling code for this number, as defined by the International

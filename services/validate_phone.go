@@ -2,150 +2,221 @@ package services
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/csv"
+	"errors"
 	"fmt"
-	"github.com/oarkflow/errors"
-	"github.com/oarkflow/phone"
+	"io"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/oarkflow/phone"
 )
 
-func GetCsvHeader(scanner *bufio.Scanner, comma rune) map[int]string {
-	scanner.Scan()
-	r := csv.NewReader(strings.NewReader(scanner.Text()))
-	r.Comma = comma
-	colHeader, _ := r.Read()
-	colPosition := make(map[int]string)
-	for key, col := range colHeader {
-		colPosition[key] = col
-	}
-	return colPosition
+var enrichmentColumns = []string{
+	"region",
+	"phone_type_label",
+	"carrier_name",
+	"carrier_mnc",
+	"carrier_mcc",
+	"carrier_nnc",
+	"phone_type_code",
+	"dial_code",
 }
 
-func ValidatePhone(csvFile, out, phoneKey string, comma rune, outputComma rune) error {
-	file, err := os.Open(csvFile)
+// GetCsvHeader reads and normalizes the first CSV record. It is retained for
+// compatibility; ValidatePhone uses encoding/csv directly so multiline fields
+// and read errors are handled correctly.
+func GetCsvHeader(scanner *bufio.Scanner, comma rune) map[int]string {
+	columns := make(map[int]string)
+	if !scanner.Scan() {
+		return columns
+	}
+	reader := csv.NewReader(strings.NewReader(scanner.Text()))
+	reader.Comma = comma
+	header, err := reader.Read()
 	if err != nil {
-		return errors.New("File not found or unable to open")
+		return columns
 	}
-	outFile, err := os.OpenFile(out, os.O_CREATE|os.O_WRONLY, 0777)
+	for index, column := range header {
+		columns[index] = clean([]byte(column))
+	}
+	return columns
+}
+
+type csvJob struct {
+	index  int
+	record []string
+}
+
+type csvResult struct {
+	index  int
+	record []string
+}
+
+// ValidatePhone streams csvFile, enriches each row in parallel, and writes
+// results in input order. Existing output files are truncated at open, and all
+// CSV read/write errors are returned to the caller.
+func ValidatePhone(csvFile, out, phoneKey string, comma, outputComma rune) error {
+	input, err := os.Open(csvFile)
 	if err != nil {
-		return errors.New("File not found")
+		return fmt.Errorf("open input CSV: %w", err)
 	}
-	defer outFile.Close()
-	scanner := bufio.NewScanner(file)
-	colPosition := GetCsvHeader(scanner, comma)
-	for k, v := range colPosition {
-		colPosition[k] = clean([]byte(v))
-	}
-	jobs := make(chan []byte)
-	results := make(chan map[string]string)
+	defer input.Close()
 
-	// I think we need a wait group, not sure.
-	wg := new(sync.WaitGroup)
-	// start up some workers that will block and wait?
-	for w := 1; w <= 2; w++ {
-		wg.Add(1)
-		go ProcessNumber(jobs, results, wg, colPosition, phoneKey, comma)
+	output, err := os.OpenFile(out, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("open output CSV: %w", err)
+	}
+	defer output.Close()
+
+	reader := csv.NewReader(bufio.NewReader(input))
+	reader.Comma = comma
+	header, err := reader.Read()
+	if err != nil {
+		return fmt.Errorf("read CSV header: %w", err)
+	}
+	for index := range header {
+		header[index] = clean([]byte(header[index]))
 	}
 
-	// Go over a file line by line and queue up a ton of work
-	go func() {
-		for scanner.Scan() {
-			// Later I want to create a buffer of lines, not just line-by-line here ...
-			jobs <- scanner.Bytes()
+	phoneIndex := -1
+	for index, column := range header {
+		if column == phoneKey {
+			phoneIndex = index
+			break
 		}
-		close(jobs)
-	}()
+	}
+	if phoneIndex < 0 {
+		return fmt.Errorf("phone column %q not found", phoneKey)
+	}
+
+	validatedColumn := "validated_" + phoneKey
+	invalidColumn := "is_invalid_" + phoneKey
+	outputHeader := append(append([]string(nil), header...), validatedColumn, invalidColumn)
+	outputHeader = append(outputHeader, enrichmentColumns...)
+
+	writer := csv.NewWriter(output)
+	writer.Comma = outputComma
+	if err := writer.Write(outputHeader); err != nil {
+		return fmt.Errorf("write CSV header: %w", err)
+	}
+
+	workerCount := max(1, runtime.GOMAXPROCS(0))
+	jobs := make(chan csvJob, workerCount)
+	results := make(chan csvResult, workerCount)
+	readErrors := make(chan error, 1)
+	var workers sync.WaitGroup
+	workers.Add(workerCount)
+	for range workerCount {
+		go func() {
+			defer workers.Done()
+			for job := range jobs {
+				number := phone.Verify(job.record[phoneIndex])
+				record := append(append([]string(nil), job.record...), number.Phone, fmt.Sprint(number.Invalid))
+				record = append(record,
+					number.CountryCode,
+					number.PhoneTypeHuman,
+					number.CarrierName,
+					number.CarrierMnc,
+					number.CarrierMcc,
+					number.CarrierNnc,
+					fmt.Sprint(number.PhoneType),
+					fmt.Sprint(number.DialCode),
+				)
+				results <- csvResult{index: job.index, record: record}
+			}
+		}()
+	}
 
 	go func() {
-		wg.Wait()
+		defer close(jobs)
+		for index := 0; ; index++ {
+			record, err := reader.Read()
+			if errors.Is(err, io.EOF) {
+				readErrors <- nil
+				return
+			}
+			if err != nil {
+				readErrors <- fmt.Errorf("read CSV record %d: %w", index+2, err)
+				return
+			}
+			jobs <- csvJob{index: index, record: record}
+		}
+	}()
+	go func() {
+		workers.Wait()
 		close(results)
 	}()
 
-	writer := csv.NewWriter(outFile)
-	writer.Comma = outputComma
-	defer writer.Flush()
-	header := make(map[int]string)
-
-	count := 0
-	for v := range results {
-		h := make([]string, len(v))
-		d := make([]string, len(v))
-		idx := 0
-		if count == 0 {
-			for col, _ := range v {
-				header[idx] = col
-				h[idx] = col
-				idx++
+	next := 0
+	pending := make(map[int][]string, workerCount)
+	for result := range results {
+		pending[result.index] = result.record
+		for {
+			record, found := pending[next]
+			if !found {
+				break
 			}
-			err = writer.Write(h)
-			if err != nil {
-				panic(err)
+			if err := writer.Write(record); err != nil {
+				return fmt.Errorf("write CSV record %d: %w", next+2, err)
 			}
+			delete(pending, next)
+			next++
 		}
-
-		for col, val := range v {
-			for id, head := range header {
-				if col == head {
-					d[id] = val
-				}
-			}
-		}
-
-		err = writer.Write(d)
-		if err != nil {
-			panic(err)
-		}
-		count++
 	}
-
+	if err := <-readErrors; err != nil {
+		return err
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return fmt.Errorf("flush output CSV: %w", err)
+	}
 	return nil
 }
 
-func clean(s []byte) string {
-	j := 0
-	for _, b := range s {
-		if ('a' <= b && b <= 'z') ||
-			('A' <= b && b <= 'Z') ||
-			('0' <= b && b <= '9') ||
-			b == ' ' {
-			s[j] = b
-			j++
+func clean(value []byte) string {
+	var normalized strings.Builder
+	normalized.Grow(len(value))
+	for _, char := range string(value) {
+		if char == ' ' || char == '_' || char == '-' ||
+			(char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') {
+			normalized.WriteRune(char)
 		}
 	}
-	return string(s[:j])
+	return normalized.String()
 }
 
-func ProcessNumber(jobs <-chan []byte, results chan<- map[string]string, wg *sync.WaitGroup, col map[int]string, phoneKey string, comma rune) {
-	// Decreasing internal counter for wait-group as soon as goroutine finishes
+// ProcessNumber enriches legacy line-oriented jobs. New code should prefer
+// ValidatePhone, which handles quoted multiline CSV records and ordered output.
+func ProcessNumber(jobs <-chan []byte, results chan<- map[string]string, wg *sync.WaitGroup, columns map[int]string, phoneKey string, comma rune) {
 	defer wg.Done()
-
-	// eventually I want to have a []string channel to work on a chunk of lines not just one line of text
-	for j := range jobs {
-		data := make(map[string]string)
-		r := csv.NewReader(bytes.NewReader(j))
-		r.Comma = comma
-		fields, _ := r.Read()
-		for key, dt := range fields {
-			data[col[key]] = dt
+	for job := range jobs {
+		reader := csv.NewReader(strings.NewReader(string(job)))
+		reader.Comma = comma
+		fields, err := reader.Read()
+		if err != nil {
+			continue
 		}
-		num := phone.Number{}
-		num.Phone = data[phoneKey]
-		num.Verify()
-		validatedPhone := "validated_" + phoneKey
-		validPhone := "is_invalid_" + phoneKey
-		data["region"] = num.CountryCode
-		data[validatedPhone] = num.Phone
-		data["phone_type_label"] = num.PhoneTypeHuman
-		data["carrier_name"] = num.CarrierName
-		data["carrier_mnc"] = num.CarrierMnc
-		data["carrier_mcc"] = num.CarrierMcc
-		data["carrier_nnc"] = num.CarrierNnc
-		data["phone_type_code"] = fmt.Sprintf("%d", num.PhoneType)
-		data["dial_code"] = fmt.Sprintf("%d", num.DialCode)
-		data[validPhone] = fmt.Sprintf("%v", num.Invalid)
+		data := make(map[string]string, len(fields)+len(enrichmentColumns)+2)
+		for index, value := range fields {
+			if column, found := columns[index]; found {
+				data[column] = value
+			}
+		}
+		number := phone.Verify(data[phoneKey])
+		data["validated_"+phoneKey] = number.Phone
+		data["is_invalid_"+phoneKey] = fmt.Sprint(number.Invalid)
+		data["region"] = number.CountryCode
+		data["phone_type_label"] = number.PhoneTypeHuman
+		data["carrier_name"] = number.CarrierName
+		data["carrier_mnc"] = number.CarrierMnc
+		data["carrier_mcc"] = number.CarrierMcc
+		data["carrier_nnc"] = number.CarrierNnc
+		data["phone_type_code"] = fmt.Sprint(number.PhoneType)
+		data["dial_code"] = fmt.Sprint(number.DialCode)
 		results <- data
 	}
 }
